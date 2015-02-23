@@ -315,7 +315,7 @@
                             var serializedValue = this._serialize(value);
                             var finalValue = serializedValue;
 
-                            if(window.sjcl) {
+                            if(window.sjcl && this._cryptoKey && !!finalValue) {
                                 finalValue = window.sjcl.encrypt(this._cryptoKey, serializedValue, { mode: 'ccm', ks: 128 }, {});
                             }
 
