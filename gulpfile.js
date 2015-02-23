@@ -19,7 +19,8 @@ var paths = {
     output : 'dist/',
     vendor: [
         'vendor/angular/angular.js',
-        'vendor/angular-mocks/angular-mocks.js'
+        'vendor/angular-mocks/angular-mocks.js',
+        'vendor/sjcl/sjcl.js'
     ],
     scripts : [
         'src/angular-locker.js'

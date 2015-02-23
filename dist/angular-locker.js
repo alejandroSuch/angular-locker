@@ -1,10 +1,11 @@
 /**
  * angular-locker
  *
- * A simple & configurable abstraction for local/session storage in angular projects.
+ * A simple & configurable abstraction for local/session storage in angular projects with SJCL crypto support
  *
- * @link https://github.com/tymondesigns/angular-locker
+ * @link https://github.com/alejandroSuch/angular-locker/
  * @author Sean Tymon @tymondesigns
+ * @author Alejandro Such @alejandro_such
  * @license MIT License, http://www.opensource.org/licenses/MIT
  */
 
@@ -70,9 +71,10 @@
             separator: '.'
         };
 
-        return {
+        var cryptoKey = null;
 
-            /**
+        return {
+             /**
              * Allow setting of default storage driver via `lockerProvider`
              * e.g. lockerProvider.setDefaultDriver('session');
              *
@@ -217,6 +219,11 @@
                     this._watchers = {};
 
                     /**
+                     * @type {String}
+                     */
+                    this._cryptoKey = null;
+
+                    /**
                      * Check browser support
                      *
                      * @see https://github.com/Modernizr/Modernizr/blob/master/feature-detects/storage/localstorage.js#L38-L47
@@ -290,7 +297,7 @@
 
                         $rootScope.$emit(name, angular.extend(payload, {
                             driver: this._deriveDriver(this._driver),
-                            namespace: this._namespace,
+                            namespace: this._namespace
                         }));
                     };
 
@@ -305,9 +312,16 @@
 
                         try {
                             var oldVal = this._getItem(key);
-                            this._driver.setItem(this._getPrefix(key), this._serialize(value));
-                            if (this._exists(key) && ! angular.equals(oldVal, value)) {
-                                this._event('locker.item.updated', { key: key, oldValue: oldVal, newValue: value });
+                            var serializedValue = this._serialize(value);
+                            var finalValue = serializedValue;
+
+                            if(window.sjcl) {
+                                finalValue = window.sjcl.encrypt(this._cryptoKey, serializedValue, { mode: 'ccm', ks: 128 }, {});
+                            }
+
+                            this._driver.setItem(this._getPrefix(key), finalValue);
+                            if (this._exists(key) && ! angular.equals(oldVal, finalValue)) {
+                                this._event('locker.item.updated', { key: key, oldValue: oldVal, newValue: finalValue });
                             } else {
                                 this._event('locker.item.added', { key: key, value: value });
                             }
@@ -329,7 +343,15 @@
                     this._getItem = function (key) {
                         if (! this._checkSupport()) _error('The browser does not support localStorage');
 
-                        return this._unserialize(this._driver.getItem(this._getPrefix(key)));
+                        var finalValue = this._driver.getItem(this._getPrefix(key));
+                        console.log('GETITEM', finalValue, key);
+                        var item = finalValue;
+
+                        if(window.sjcl && this._cryptoKey && !!finalValue) {
+                            item = window.sjcl.decrypt(this._cryptoKey, finalValue, {}, {});
+                        }
+
+                        return this._unserialize(item);
                     };
 
                     /**
@@ -528,18 +550,25 @@
                      * @param  {Object}  $scope
                      * @param  {String}  key
                      * @param  {Mixed}   def
+                     * @param  {String}  attr
                      * @return {self}
                      */
-                    bind: function ($scope, key, def) {
-                        if (angular.isUndefined( $scope.$eval(key) )) {
-                            $parse(key).assign($scope, this.get(key, def));
-                            if (! this.has(key)) this.put(key, def);
-                        }
+                    bind: function ($scope, key, def, attr) {
+                        var index = attr || key;
 
                         var self = this;
-                        this._watchers[key + $scope.$id] = $scope.$watch(key, function (newVal) {
-                            if (angular.isDefined(newVal)) self.put(key, newVal);
-                        }, angular.isObject($scope[key]));
+                        var watcherId = (index + $scope.$id);
+
+                        this._watchers[ watcherId] = $scope.$watch(index, function (newVal) {
+                            if (angular.isDefined(newVal)) {
+                                self.put(key, newVal);
+                            }
+                        }, angular.isObject($scope[index]));
+
+                        if (angular.isUndefined( $scope.$eval(index) )) {
+                            var value = this.get(key, def);
+                            $parse(index).assign($scope, value);
+                        }
 
                         return this;
                     },
@@ -549,15 +578,26 @@
                      *
                      * @param  {Object}  $scope
                      * @param  {String}  key
+                     * @param  {String}  attr
+                     * @param  {boolean}  dontForget
                      * @return {self}
                      */
-                    unbind: function ($scope, key) {
-                        $parse(key).assign($scope, void 0);
-                        this.forget(key);
-                        if (this._watchers[key + $scope.$id]) {
-                            // execute the de-registration function
-                            this._watchers[key + $scope.$id]();
-                            delete this._watchers[key + $scope.$id];
+                    unbind: function ($scope, key, attr, dontForget) {
+                        var index = attr || key;
+
+                        $parse(index).assign($scope, null);
+
+                        if(!dontForget) {
+                            console.log('forgettign');
+                            this.forget(key);
+                        } else {
+                            console.log('dont forget');
+                        }
+
+                        var watcherId = (index + $scope.$id);
+                        if (this._watchers[ watcherId]) {
+                            this._watchers[watcherId]();
+                            delete this._watchers[watcherId];
                         }
 
                         return this;
@@ -610,6 +650,18 @@
                      */
                     supported: function (driver) {
                         return this._checkSupport(driver);
+                    },
+
+                    /**
+                     *
+                     * @param {String} key
+                     */
+                    setCryptoKey: function(key){
+                        if (!angular.isString(key) || key.length === 0 || key.replace(/\s/gm, '').length === 0) { // Check non-blank
+                            return;
+                        }
+
+                        this._cryptoKey = key;
                     },
 
                     /**

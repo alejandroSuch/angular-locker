@@ -622,9 +622,21 @@ describe('angular-locker', function () {
             }));
 
             it('should bind a variable to the scope with a default', inject(function (locker, $rootScope) {
+
                 locker.bind($rootScope, 'foo', 'defaultVal');
 
                 expect($rootScope.foo).toEqual('defaultVal');
+                $rootScope.$apply();
+                expect(locker.get('foo')).toEqual('defaultVal');
+            }));
+
+            iit('should bind a variable to the scope with a default and encrypt in the storage', inject(function (locker, $rootScope) {
+                locker.setCryptoKey('asdfasdf');
+
+                locker.bind($rootScope, 'foo', 'defaultVal');
+
+                expect($rootScope.foo).toEqual('defaultVal');
+                $rootScope.$apply();
                 expect(locker.get('foo')).toEqual('defaultVal');
             }));
 
@@ -639,7 +651,7 @@ describe('angular-locker', function () {
 
                 locker.unbind($rootScope, 'foo');
 
-                expect($rootScope.foo).toBeUndefined();
+                expect($rootScope.foo).toBe(null);
                 expect(Object.keys(locker._watchers).length).toEqual(1);
             }));
 
