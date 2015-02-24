@@ -221,7 +221,7 @@
                     /**
                      * @type {String}
                      */
-                    this._cryptoKey = null;
+                    this._cryptoKey = { value : null };
 
                     /**
                      * Check browser support
@@ -316,8 +316,8 @@
                             var serializedValue = this._serialize(value);
                             var finalValue = serializedValue;
 
-                            if(!!encrypted && window.sjcl && this._cryptoKey && !!finalValue) {
-                                finalValue = window.sjcl.encrypt(this._cryptoKey, serializedValue, { mode: 'ccm', ks: 128 }, {});
+                            if(!!encrypted && window.sjcl && !!this._cryptoKey.value && !!finalValue) {
+                                finalValue = window.sjcl.encrypt(this._cryptoKey.value, serializedValue, { mode: 'ccm', ks: 128 }, {});
                             }
 
                             this._driver.setItem(this._getPrefix(key), finalValue);
@@ -348,8 +348,8 @@
                         var finalValue = this._driver.getItem(this._getPrefix(key));
                         var item = finalValue;
 
-                        if(!!encrypted && window.sjcl && this._cryptoKey && !!finalValue) {
-                            item = window.sjcl.decrypt(this._cryptoKey, finalValue, {}, {});
+                        if(!!encrypted && window.sjcl && !!this._cryptoKey.value && !!finalValue) {
+                            item = window.sjcl.decrypt(this._cryptoKey.value, finalValue, {}, {});
                         }
 
                         return this._unserialize(item);
@@ -397,6 +397,7 @@
                      *
                      * @param  {Mixed}  key
                      * @param  {Mixed}  value
+                     * @param  {Boolean}  encrypted
                      * @return {self}
                      */
                     put: function (key, value, encrypted) {
@@ -409,7 +410,7 @@
                             }, this);
                         } else {
                             if (! angular.isDefined(value)) return false;
-                            this._setItem(key, _value(value, this._getItem(key)), !!encrypted);
+                            this._setItem(key, _value(value, this._getItem(key, !!encrypted)), !!encrypted);
                         }
 
                         return this;
@@ -420,11 +421,12 @@
                      *
                      * @param  {Mixed}  key
                      * @param  {Mixed}  value
+                     * @param  {Boolean}  encrypted 
                      * @return {Boolean}
                      */
-                    add: function (key, value) {
+                    add: function (key, value, encrypted) {
                         if (! this.has(key)) {
-                            this.put(key, value);
+                            this.put(key, value, encrypted);
                             return true;
                         }
 
@@ -436,6 +438,7 @@
                      *
                      * @param  {String|Array}  key
                      * @param  {Mixed}  def
+                     * @param  {Boolean}  encrypted
                      * @return {Mixed}
                      */
                     get: function (key, def, encrypted) {
@@ -486,6 +489,7 @@
                      *
                      * @param  {String|Array}  key
                      * @param  {Mixed}  def
+                     * @param  {Boolean}  encrypted
                      * @return {Mixed}
                      */
                     pull: function (key, def, encrypted) {
@@ -688,7 +692,7 @@
                             return;
                         }
 
-                        this._cryptoKey = key;
+                        this._cryptoKey.value = key;
                     },
 
                     /**

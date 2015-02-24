@@ -1,6 +1,6 @@
 {
   "name": "angular-locker",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "A simple & configurable abstraction for local/session storage in angular projects with SJCL crypto support",
   "authors": [
     "Sean Tymon <tymon148@gmail.com>",
