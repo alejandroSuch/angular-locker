@@ -26,22 +26,12 @@ A simple & configurable abstraction for local/session storage in angular project
 <h4 id="installation-via-bower">via bower</h4>
 
 ```bash
-$ bower install angular-locker
+$ bower install asuch-angular-locker
 ```
-
-<h4 id="installation-via-npm">via npm</h4>
-
-```bash
-$ npm install angular-locker
-```
-
-<h4 id="installation-via-jsdelivr-cdn">via jsDelivr CDN</h4>
-
-http://www.jsdelivr.com/#!angular.locker
 
 <h4 id="installation-manual">manual</h4>
 
-Simply download the zip file [HERE](https://github.com/tymondesigns/angular-locker/archive/master.zip) and include `dist/angular-locker.min.js` in your project.
+Simply download the zip file [HERE](https://github.com/alejandroSuch/angular-locker/archive/master.zip) and include `dist/angular-locker.min.js` in your project.
 
 1.92 kB Minified & gzipped.
 
