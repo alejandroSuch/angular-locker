@@ -442,13 +442,13 @@
                         if (angular.isArray(key)) {
                             var items = {};
                             angular.forEach(key, function (k) {
-                                if (this.has(k)) items[k] = this._getItem(k);
+                                if (this.has(k)) items[k] = this._getItem(k, !!encrypted);
                             }, this);
 
                             return items;
                         }
 
-                        if (! this.has(key)) return arguments.length === 2 ? def : void 0;
+                        if (! this.has(key)) return [2,3].indexOf(arguments.length) !==  -1? def : void 0;
 
                         return this._getItem(key, !!encrypted);
                     },
@@ -488,8 +488,8 @@
                      * @param  {Mixed}  def
                      * @return {Mixed}
                      */
-                    pull: function (key, def) {
-                        var value = this.get(key, def);
+                    pull: function (key, def, encrypted) {
+                        var value = this.get(key, def, !!encrypted);
                         this.forget(key);
 
                         return value;
