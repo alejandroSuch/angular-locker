@@ -306,8 +306,9 @@
                      *
                      * @param {String}  key
                      * @param {Mixed}  value
+                     * @param {boolean}  encrypted
                      */
-                    this._setItem = function (key, value) {
+                    this._setItem = function (key, value, encrypted) {
                         if (! this._checkSupport()) _error('The browser does not support localStorage');
 
                         try {
@@ -315,7 +316,7 @@
                             var serializedValue = this._serialize(value);
                             var finalValue = serializedValue;
 
-                            if(window.sjcl && this._cryptoKey && !!finalValue) {
+                            if(!!encrypted && window.sjcl && this._cryptoKey && !!finalValue) {
                                 finalValue = window.sjcl.encrypt(this._cryptoKey, serializedValue, { mode: 'ccm', ks: 128 }, {});
                             }
 
@@ -338,16 +339,16 @@
                      * Get from storage
                      *
                      * @param  {String}  key
+                     * @param  {boolean}  encrypted
                      * @return {Mixed}
                      */
-                    this._getItem = function (key) {
+                    this._getItem = function (key, encrypted) {
                         if (! this._checkSupport()) _error('The browser does not support localStorage');
 
                         var finalValue = this._driver.getItem(this._getPrefix(key));
-                        console.log('GETITEM', finalValue, key);
                         var item = finalValue;
 
-                        if(window.sjcl && this._cryptoKey && !!finalValue) {
+                        if(!!encrypted && window.sjcl && this._cryptoKey && !!finalValue) {
                             item = window.sjcl.decrypt(this._cryptoKey, finalValue, {}, {});
                         }
 
@@ -398,17 +399,17 @@
                      * @param  {Mixed}  value
                      * @return {self}
                      */
-                    put: function (key, value) {
+                    put: function (key, value, encrypted) {
                         if (! key) return false;
                         key = _value(key);
 
                         if (angular.isObject(key)) {
                             angular.forEach(key, function (value, key) {
-                                this._setItem(key, value);
+                                this._setItem(key, value, !!encrypted);
                             }, this);
                         } else {
                             if (! angular.isDefined(value)) return false;
-                            this._setItem(key, _value(value, this._getItem(key)));
+                            this._setItem(key, _value(value, this._getItem(key)), !!encrypted);
                         }
 
                         return this;
@@ -437,7 +438,7 @@
                      * @param  {Mixed}  def
                      * @return {Mixed}
                      */
-                    get: function (key, def) {
+                    get: function (key, def, encrypted) {
                         if (angular.isArray(key)) {
                             var items = {};
                             angular.forEach(key, function (k) {
@@ -449,7 +450,7 @@
 
                         if (! this.has(key)) return arguments.length === 2 ? def : void 0;
 
-                        return this._getItem(key);
+                        return this._getItem(key, !!encrypted);
                     },
 
                     /**
@@ -574,6 +575,35 @@
                     },
 
                     /**
+                     * Bind a storage key to a $scope property, and encrypt it
+                     *
+                     * @param  {Object}  $scope
+                     * @param  {String}  key
+                     * @param  {Mixed}   def
+                     * @param  {String}  attr
+                     * @return {self}
+                     */
+                    bindEncrypted: function ($scope, key, def, attr) {
+                        var index = attr || key;
+
+                        var self = this;
+                        var watcherId = (index + $scope.$id);
+
+                        this._watchers[ watcherId] = $scope.$watch(index, function (newVal) {
+                            if (angular.isDefined(newVal)) {
+                                self.put(key, newVal, true);
+                            }
+                        }, angular.isObject($scope[index]));
+
+                        if (angular.isUndefined( $scope.$eval(index) )) {
+                            var value = this.get(key, def, true);
+                            $parse(index).assign($scope, value);
+                        }
+
+                        return this;
+                    },
+
+                    /**
                      * Unbind a storage key from a $scope property
                      *
                      * @param  {Object}  $scope
@@ -588,14 +618,11 @@
                         $parse(index).assign($scope, null);
 
                         if(!dontForget) {
-                            console.log('forgettign');
                             this.forget(key);
-                        } else {
-                            console.log('dont forget');
                         }
 
                         var watcherId = (index + $scope.$id);
-                        if (this._watchers[ watcherId]) {
+                        if (this._watchers[watcherId]) {
                             this._watchers[watcherId]();
                             delete this._watchers[watcherId];
                         }
