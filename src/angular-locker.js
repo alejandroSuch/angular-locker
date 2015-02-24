@@ -703,7 +703,9 @@
                      * @return {Locker}
                      */
                     instance: function (driver, namespace) {
-                        return new Locker(driver, namespace);
+                        var locker = new Locker(driver, namespace);
+                        locker.setCryptoKey(this._cryptoKey.value);
+                        return  locker;
                     }
                 };
 
