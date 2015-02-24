@@ -33,7 +33,7 @@ $ bower install asuch-angular-locker
 
 Simply download the zip file [HERE](https://github.com/alejandroSuch/angular-locker/archive/master.zip) and include `dist/angular-locker.min.js` in your project.
 
-1.92 kB Minified & gzipped.
+1.94 kB Minified & gzipped.
 
 <h2 id="usage">Usage</h2>
 

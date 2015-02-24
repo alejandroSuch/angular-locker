@@ -695,6 +695,12 @@
                         this._cryptoKey.value = key;
                     },
 
+                    clearWatchers: function() {
+                        for(var i in this._watchers) {
+                            this._watchers[i]();
+                        }
+                    },
+
                     /**
                      * Get a new instance of Locker
                      *
